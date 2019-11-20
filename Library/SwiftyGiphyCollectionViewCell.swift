@@ -10,7 +10,7 @@ import UIKit
 import FLAnimatedImage
 import SDWebImage
 
-class SwiftyGiphyCollectionViewCell: UICollectionViewCell {
+public class SwiftyGiphyCollectionViewCell: UICollectionViewCell {
     
     fileprivate(set) var imageView: FLAnimatedImageView = FLAnimatedImageView()
     
@@ -68,7 +68,7 @@ class SwiftyGiphyCollectionViewCell: UICollectionViewCell {
             ])
     }
     
-    override func prepareForReuse() {
+    override public func prepareForReuse() {
         super.prepareForReuse()
         imageView.sd_cancelCurrentAnimationImagesLoad()
         imageView.sd_cancelCurrentImageLoad()

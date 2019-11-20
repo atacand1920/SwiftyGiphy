@@ -15,24 +15,24 @@ public protocol SwiftyGiphyGridLayoutDelegate: class {
 
 public class SwiftyGiphyGridLayout: UICollectionViewLayout {
 
-    weak var delegate: SwiftyGiphyGridLayoutDelegate?
+    public weak var delegate: SwiftyGiphyGridLayoutDelegate?
     
     /// The spacing between cells, as well as the spacing between the edges of the collection view and the cells.
-    var padding: CGFloat = 10.0 {
+    public var padding: CGFloat = 10.0 {
         didSet {
             invalidateLayout()
         }
     }
     
     /// The preferrred cell width. NOTE: It's unlikely your cells will be exactly this size. The actual calculation also considers padding, so we get as close to this as we can.
-    var preferredCellWidth: CGFloat = 150.0 {
+   public  var preferredCellWidth: CGFloat = 150.0 {
         didSet {
             invalidateLayout()
         }
     }
     
     /// The actual column width. Use this for calculations where you need to know the exact width of a presented cell.
-    var columnWidth: CGFloat {
+    public var columnWidth: CGFloat {
         
         let numberOfPaddingSections = numberOfColumns + 1
         
@@ -41,19 +41,19 @@ public class SwiftyGiphyGridLayout: UICollectionViewLayout {
         return floor(availableContentWidth / CGFloat(numberOfColumns))
     }
     
-    var contentWidth: CGFloat {
+    public var contentWidth: CGFloat {
         let insets = collectionView!.contentInset
         return collectionView!.bounds.width - (insets.left + insets.right)
     }
     
-    var numberOfColumns: Int {
+    public var numberOfColumns: Int {
         
         return Int(floor(contentWidth / preferredCellWidth))
     }
     
-    fileprivate var cellAttributeCache = [UICollectionViewLayoutAttributes]()
+      var cellAttributeCache = [UICollectionViewLayoutAttributes]()
     
-    fileprivate(set) var contentHeight: CGFloat = 0.0
+      var contentHeight: CGFloat = 0.0
     
     override public func prepare() {
         
