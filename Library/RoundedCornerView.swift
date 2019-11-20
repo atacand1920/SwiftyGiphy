@@ -8,7 +8,7 @@
 
 import UIKit
 
-class RoundedCornerView: UIView {
+public class RoundedCornerView: UIView {
     
     @IBInspectable var cornerRadius: CGFloat = 3.0 {
         didSet {
@@ -24,7 +24,7 @@ class RoundedCornerView: UIView {
     
     fileprivate let roundingMask = CornerRoundingMaskView(cornerRadius: 0.0)
     
-    override var bounds: CGRect {
+    override public var bounds: CGRect {
         didSet {
             self.setNeedsLayout()
         }
@@ -47,7 +47,7 @@ class RoundedCornerView: UIView {
         self.setNeedsLayout()
     }
     
-    override func layoutSubviews() {
+    override public func layoutSubviews() {
         super.layoutSubviews()
         
         if trackHeightForRadius

@@ -19,7 +19,30 @@ public protocol SwiftyGiphyViewControllerDelegate: class {
 
 fileprivate let kSwiftyGiphyCollectionViewCell = "SwiftyGiphyCollectionViewCell"
 
-public class SwiftyGiphyViewController: UIViewController {
+public class SwiftyGiphyViewController: UIViewController,SwiftyGiphyViewControllerDelegate {
+    public func giphyControllerDidSelectGif(controller: SwiftyGiphyViewController, item: GiphyItem) {
+        //item.imageSetClosestTo(width: 720, animated: true)?.mp4URL
+        
+        let url = item.originalImage?.mp4URL
+        //print(url?.absoluteString)
+        guard let tempTrunc = url?.absoluteString.components(separatedBy: "?")else {
+            return
+        }
+        let tempTruncTwo = tempTrunc[0].components(separatedBy: "/")
+        guard let tempName = tempTruncTwo.last else {
+            return
+        }
+        let keyName = tempTruncTwo[tempTruncTwo.count - 2]
+        let finalName = "https://i.giphy.com/media/" + keyName + "/" + tempName
+        NotificationCenter.default.post(name: NSNotification.Name.init("sendVideo"), object: finalName)
+        
+       print(finalName)
+    }
+    
+    public func giphyControllerDidCancel(controller: SwiftyGiphyViewController) {
+        print("Did cancel")
+    }
+    
 
     fileprivate let searchController: UISearchController = UISearchController(searchResultsController: nil)
     fileprivate let searchContainerView: UIView = UIView(frame: CGRect.zero)
@@ -82,7 +105,7 @@ public class SwiftyGiphyViewController: UIViewController {
 
     public override func loadView() {
         super.loadView()
-
+        
         self.title = NSLocalizedString("Giphy", comment: "Giphy")
         
         self.navigationItem.titleView = UIImageView(image: UIImage(named: "GiphyLogoEmblem", in: Bundle(for: SwiftyGiphyViewController.self), compatibleWith: nil))
@@ -113,7 +136,7 @@ public class SwiftyGiphyViewController: UIViewController {
         loadingIndicator.color = UIColor.lightGray
         loadingIndicator.hidesWhenStopped = true
         loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
-
+        delegate = self
         errorLabel.textAlignment = .center
         errorLabel.textColor = UIColor.lightGray
         errorLabel.font = UIFont.systemFont(ofSize: 20.0, weight: .medium)
@@ -157,7 +180,7 @@ public class SwiftyGiphyViewController: UIViewController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-
+        NotificationCenter.default.post(name: NSNotification.Name.init("ConnectServer"), object: nil)
         // Do any additional setup after loading the view.
         if let collectionViewLayout = collectionView.collectionViewLayout as? SwiftyGiphyGridLayout
         {

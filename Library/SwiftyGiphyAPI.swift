@@ -19,7 +19,7 @@ public typealias GiphySimpleSingleGIFResponseBlock = (_ error: NSError?, _ respo
 fileprivate typealias GiphyAPIResponseBlock = (_ error: NSError?, _ response: [String : AnyObject]?) -> Void
 
 fileprivate let kGiphyUnknownResponseError = NSLocalizedString("The server returned an unknown response.", comment: "The error message shown when the server produces something unintelligible.")
-
+fileprivate let kGiphyApiResponseError = NSLocalizedString("The server returned 429", comment: "Too many requests.")
 fileprivate let kGiphyDefaultAPIBase = URL(string: "https://api.giphy.com/v1/gifs/")!
 fileprivate let kGiphyDefaultStickerAPIBase = URL(string: "https://api.giphy.com/v1/stickers/")!
 
@@ -34,7 +34,7 @@ public enum SwiftyGiphyAPIContentRating: String {
 
 public class SwiftyGiphyAPI {
 
-    public static let publicBetaKey = "dc6zaTOxFJmzC"
+    public static let publicBetaKey = "umqgJrIgrN7bflp0esheVj45Jlzt6zI5"
     
     /// Access the Giphy API through the shared singleton.
     public static let shared: SwiftyGiphyAPI = SwiftyGiphyAPI()
@@ -116,7 +116,7 @@ public class SwiftyGiphyAPI {
                 let jsonObj = try? JSONSerialization.jsonObject(with: validData, options: .allowFragments),
                 let jsonDict = jsonObj as? [String : AnyObject],
                 let httpResponse = response as? HTTPURLResponse else {
-                    
+                
                     if let validData = data,
                         let jsonObj = try? JSONSerialization.jsonObject(with: validData, options: .allowFragments),
                         let jsonArray = jsonObj as? [[String : AnyObject]]
@@ -141,12 +141,18 @@ public class SwiftyGiphyAPI {
             // Check the network error code
             guard httpResponse.statusCode >= 200 && httpResponse.statusCode < 300 else {
                 
-
+                if httpResponse.statusCode != 429 {
                 let error = NSError(domain: kGiphyNetworkingErrorDomain, code: httpResponse.statusCode, userInfo: [
                     NSLocalizedDescriptionKey : kGiphyUnknownResponseError
                     ])
                 
                 completion?(error, jsonDict)
+                }else{
+                  let error = NSError(domain: kGiphyNetworkingErrorDomain, code: httpResponse.statusCode, userInfo: [
+                    NSLocalizedDescriptionKey : kGiphyApiResponseError
+                    ])
+                    completion?(error, jsonDict)
+                }
                 SwiftyGiphyAPI.setNetworkActivityIndicatorVisible(visible: false)
                 return;
             }
@@ -266,7 +272,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["limit"] = limit
@@ -281,14 +287,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getTrending(limit: limit, rating: rating, offset: offset, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gifs!
             guard let validResponse = response, let gifs = Mapper<GiphyMultipleGIFResponse>().map(JSONObject: validResponse) else {
@@ -322,9 +332,9 @@ public extension SwiftyGiphyAPI {
         
         var params = [String : Any]()
         
-        if let validAPIKey = apiKey
+        if let _ = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["q"] = searchTerm
@@ -342,13 +352,17 @@ public extension SwiftyGiphyAPI {
             
             guard error == nil, response != nil else {
                 DispatchQueue.main.async {
-                    
+                    if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                        print("changeApiKey")
+                        GiphyApiKeys.sharedInstance.changeApiKey()
+                        self.getSearch(searchTerm: searchTerm, limit: limit, rating: rating, offset: offset, completion: completion)
+                    }
                     completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
                 }
                 
                 return
             }
-            
+           
             // We have gifs!
             guard let validResponse = response, let gifs = Mapper<GiphyMultipleGIFResponse>().map(JSONObject: validResponse) else {
                 
@@ -382,7 +396,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["s"] = searchTerm
@@ -397,14 +411,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getTranslation(searchTerm: searchTerm, rating: rating, languageCode: languageCode, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gif!
             guard let validResponse = response, let gifs = Mapper<GiphySingleGIFResponse>().map(JSONObject: validResponse) else {
@@ -438,7 +456,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["tag"] = tag
@@ -448,15 +466,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
-            
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getRandom(tag: tag, rating: rating, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             // We have gif!
             guard let validResponse = response, let gifs = Mapper<GiphySimpleSingleGIFResponse>().map(JSONObject: validResponse) else {
                 
@@ -489,7 +510,7 @@ public extension SwiftyGiphyAPI {
         if let validAPIKey = apiKey
         {
             params = [String : Any]()
-            params?["api_key"] = validAPIKey
+            params?["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         let request = createRequest(baseURL: giphyAPIBase, relativePath: identifier, method: "GET", params: params)
@@ -497,13 +518,17 @@ public extension SwiftyGiphyAPI {
         send(request: request) { [unowned self] (error, response) in
             
             guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getGIFById(identifier: identifier, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gif!
             guard let validResponse = response, let gifs = Mapper<GiphySingleGIFResponse>().map(JSONObject: validResponse) else {
@@ -542,7 +567,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["limit"] = limit
@@ -557,14 +582,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getTrendingStickers(limit: limit, rating: rating, offset: offset, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gifs!
             guard let validResponse = response, let gifs = Mapper<GiphyMultipleGIFResponse>().map(JSONObject: validResponse) else {
@@ -600,7 +629,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["q"] = searchTerm
@@ -616,14 +645,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getSearchStickers(searchTerm: searchTerm, limit: limit, rating: rating, offset: offset, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gifs!
             guard let validResponse = response, let gifs = Mapper<GiphyMultipleGIFResponse>().map(JSONObject: validResponse) else {
@@ -658,7 +691,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["s"] = searchTerm
@@ -673,14 +706,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getTranslationStickers(searchTerm: searchTerm, rating: rating, languageCode: languageCode, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gif!
             guard let validResponse = response, let gifs = Mapper<GiphySingleGIFResponse>().map(JSONObject: validResponse) else {
@@ -714,7 +751,7 @@ public extension SwiftyGiphyAPI {
         
         if let validAPIKey = apiKey
         {
-            params["api_key"] = validAPIKey
+            params["api_key"] = GiphyApiKeys.sharedInstance.defaultKey
         }
         
         params["tag"] = tag
@@ -724,14 +761,18 @@ public extension SwiftyGiphyAPI {
         
         send(request: request) { [unowned self] (error, response) in
             
-            guard error == nil, response != nil else {
-                DispatchQueue.main.async {
-                    
-                    completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
-                }
-                
-                return
-            }
+             guard error == nil, response != nil else {
+                           DispatchQueue.main.async {
+                               if (error?.userInfo[NSLocalizedDescriptionKey] as! String) == kGiphyApiResponseError {
+                                   print("changeApiKey")
+                                   GiphyApiKeys.sharedInstance.changeApiKey()
+                                   self.getRandomSticker(tag: tag, rating: rating, completion: completion)
+                               }
+                               completion?(error ?? self.networkError(description: kGiphyUnknownResponseError), nil)
+                           }
+                           
+                           return
+                       }
             
             // We have gif!
             guard let validResponse = response, let gifs = Mapper<GiphySimpleSingleGIFResponse>().map(JSONObject: validResponse) else {
